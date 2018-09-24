@@ -111,6 +111,7 @@ class ofApp : public ofBaseApp{
 		vector<Seg> getsegvec(vector<Pt>);
 		vector<vector<Pt>> getcrvpts(vector<Pt>);
 		vector<Pt> gensmoothboundary(vector<Pt>);
+		vector<Pt> genintsmoothspine(vector<Pt>);
 		vector<Pt> geninternalboundary(vector<Pt>, float);
 		vector<Pt> Lerp(Pt, Pt, Pt);
 		Pt intxPt(Pt, Pt, Pt, Pt);
@@ -150,7 +151,8 @@ class ofApp : public ofBaseApp{
 		vector<Pt> spineptvec; //from these points extract 2-loaded corridor
 		vector<Quad> subdivquads; //subdivision of quad internal
 		vector<Quad> intquads; //peripheral internal quads
-
+		vector<Pt> inismoothspinept;// initial points of smooth spine
+		vector<Pt> fsmoothspinept;
 
 		int controlspine = 0;
 		int generatesubdivsystem = 0;
@@ -171,7 +173,7 @@ class ofApp : public ofBaseApp{
 		ofParameterGroup parameters;
 		ofParameter<bool>showCurveSeg;
 		ofParameter<string>generalperpparamsblank;
-		ofParameter<float>CurvaTure;
+		ofParameter<float>PCurvature;
 		ofParameter<int>CurveSegP0;
 		
 		ofParameter<float>PeripheralCellDepth;
@@ -182,6 +184,7 @@ class ofApp : public ofBaseApp{
 
 		ofParameter<string>crossconfigblank;
 		ofParameter<bool>spinecontrolpts;
+		ofParameter<float>ICurvature;
 
 		ofParameter<string>generalintparamsblank;
 		ofParameter<bool>showintregion;

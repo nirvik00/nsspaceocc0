@@ -99,6 +99,30 @@ vector<Pt> ofApp::gensmoothboundary(vector<Pt>ptvec) {
 	return newptvec;
 }
 
+vector<Pt> ofApp::genintsmoothspine(vector<Pt>ptvec) {
+	vector<Pt> newpts;
+	for (int i = 0; i < ptvec.size()-2; i++) {
+		Pt a = ptvec[i];
+		Pt b = ptvec[i + 1];
+		Pt c = ptvec[i+2];
+
+		Pt a_(a.x + (b.x - a.x)*ICurvature, a.y + (b.y - a.y)*ICurvature);
+		Pt c_(c.x + (b.x - c.x)*ICurvature, c.y + (b.y - c.y)*ICurvature);
+		Pt ba(b.x + (a.x - b.x)*ICurvature, b.y + (a.y - b.y)*ICurvature);
+		Pt bc(b.x + (c.x - b.x)*ICurvature, b.y + (c.y - b.y)*ICurvature);
+		vector<Pt> pt0;
+		for (float j = 0; j < 1.0; j += 0.01) {
+			Pt p(ba.x + (a_.x - ba.x)*j, ba.y + (a_.y - ba.y)*j);
+			newpts.push_back(p);
+		}
+		vector<Pt> pts=Lerp(a_, b, c_);
+		for (int j = 0; j < pts.size(); j++) {
+			newpts.push_back(pts[j]);
+		}
+	}
+	return newpts;
+}
+
 vector<Pt> ofApp::gensmoothboundary(Pt a, Pt b, Pt c, Pt d) {
 	vector<Pt> abc = Lerp(a, b, c);
 	return abc;
@@ -176,7 +200,7 @@ void ofApp::setup(){
 	parameters.add(controlpts.set("Control Pts", false));
 	
 	parameters.add(generalperpparamsblank.set("PERIPHERAL PARAMETERS"));
-	parameters.add(CurvaTure.set("Curvature", 0.6972, 0.51, 0.99f));
+	parameters.add(PCurvature.set("Curvature", 0.6972, 0.51, 0.99f));
 	parameters.add(CurveSegP0.set("Crv Seg P-0", 6.1, 1, 10));
 	parameters.add(PeripheralCellDepth.set("P. Depth", 50, 5, 125));
 	parameters.add(PeripheralCellLength.set("P. Length", 50, 5, 75));	
@@ -185,6 +209,7 @@ void ofApp::setup(){
 	
 	parameters.add(crossconfigblank.set("CROSS SPINE CONFIG"));
 	parameters.add(spinecontrolpts.set("Spine Control Pts", false));
+	parameters.add(ICurvature.set("Curvature", 0.6972, 0.51, 0.99f));
 	parameters.add(intsubdiv.set("Number of subdiv", 1, 0, 3));
 	parameters.add(showintregion.set("Show I region", false));
 
@@ -195,7 +220,16 @@ void ofApp::setup(){
 
 	gui.setup(parameters);
 	gui.setBackgroundColor(ofColor(255,150,255));
+
 	L = PeripheralCellLength; W = PeripheralCellLength; Corridor = Corridor0;
+
+	Pt p0(500, 450); Pt p1(600, 450); Pt p2(700, 450);
+	Pt p3(800, 450); Pt p4(900, 450); Pt p5(1000, 450);
+	Pt p6(1100, 450); Pt p7(1175, 450); 
+	inismoothspinept.push_back(p0); inismoothspinept.push_back(p1); inismoothspinept.push_back(p2);
+	inismoothspinept.push_back(p3); inismoothspinept.push_back(p4); inismoothspinept.push_back(p5);
+	inismoothspinept.push_back(p6); inismoothspinept.push_back(p7);
+	
 	ofSetBackgroundColor(255); ofSetColor(0); ofFill();
 	iniptvec.push_back(Pt(550, 100)); iniptvec.push_back(Pt(950, 250)); iniptvec.push_back(Pt(1350, 100));
 	iniptvec.push_back(Pt(1200, 450)); iniptvec.push_back(Pt(1350, 850)); iniptvec.push_back(Pt(950, 700));
@@ -208,7 +242,7 @@ void ofApp::setup(){
 }
 
 void ofApp::update(){
-	L = PeripheralCellLength; W = PeripheralCellDepth; Corridor = Corridor0; Curvature = CurvaTure;
+	L = PeripheralCellLength; W = PeripheralCellDepth; Corridor = Corridor0; Curvature = PCurvature;
 
 	revptvec.clear(); intptvec.clear(); revintptvec.clear(); intgridptvec.clear(); revintgridptvec.clear();
 	revptvec = gensmoothboundary(iniptvec);
@@ -238,10 +272,13 @@ void ofApp::update(){
 		initSpineBBSubdiv();
 		generatesubdivsystem = 0;
 	}
+	
+	//get the smooth spine
+	fsmoothspinept = genintsmoothspine(inismoothspinept);
+	
 }
 
 void ofApp::draw() {
-	
 	trivec.clear();
 	//plot smooth boundaries	
 	float sW = 2; ofColor colr = (ofColor(255, 0, 0, 50)); 
@@ -507,6 +544,121 @@ void ofApp::draw() {
 		ofSetColor(0, 0, 0, 150); ofSetLineWidth(1); ofNoFill(); ofDrawEllipse(spineverseg.B.x, spineverseg.B.y, 25, 25);
 	}
 
+	//plot smooth spine
+	for (int i = 0; i < inismoothspinept.size(); i++) {
+		ofSetLineWidth(1);
+		if (inismoothspinept[i].locked == 1) {
+			ofFill(); ofSetColor(255, 0, 0, 150);
+			ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 10, 10);
+		}
+		else {
+			ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 10, 10);
+		}		
+		ofNoFill(); ofSetColor(0); ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 25, 25);
+	}
+	for (int i = 1; i < inismoothspinept.size(); i++) {
+		Pt a = inismoothspinept[i-1]; Pt b = inismoothspinept[i];
+		ofSetLineWidth(1); ofSetColor(150); ofDrawLine(a.x, a.y, b.x, b.y);
+	}
+
+
+	//points inside the interior polygon
+	vector<Pt> intspinepts; 
+	for (int i = 1; i < fsmoothspinept.size(); i++) {
+		Pt a = fsmoothspinept[i]; ofVec3f p(a.x, a.y, 0);
+		bool t = intpolyline.inside(p);
+		if (t == true) {
+			intspinepts.push_back(Pt(a.x, a.y));
+			//ofDrawEllipse(a.x, a.y, 10, 10);
+		}		
+	}
+
+	//get spaced-out points
+	vector<Pt> reqspinepts; Pt prev(intspinepts[0]);
+	for (int i = 0; i < intspinepts.size(); i++) {
+		float d = intspinepts[i].di(prev);
+		if (d > (spinequadle * 2) + spinecorrde) {
+			reqspinepts.push_back(intspinepts[i]);
+			prev.setup(intspinepts[i].x, intspinepts[i].y);
+		}
+	}
+
+	//normals from interior spine points  + intersection of normals from spine wrt interior
+	vector<Seg> segup; vector<Seg> segdn;
+	for (int i = 1; i < reqspinepts.size(); i++) {
+		Pt a = reqspinepts[i - 1]; Pt b = reqspinepts[i];
+		Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
+		Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
+		Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
+		for (int j = 1; j < revintgridptvec.size(); j++) {
+			Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
+			Pt I = intxPt4(e, a, m, n);
+			if (I.x > 0 && I.y > 0) {
+				//ofEllipse(I.x, I.y, 20, 20);
+				segdn.push_back(Seg(a, I));
+			}
+			Pt J = intxPt4(f, a, m, n);
+			if (J.x > 0 && J.y > 0) {
+				//ofEllipse(I.x, I.y, 20, 20);
+				segup.push_back(Seg(a, J));
+			}
+		}
+	}
+
+	//construct quads of rational rects UP
+	vector<Quad>quadint;
+	for (int i = 1; i < segup.size(); i++) {
+		//a is point on spine & b is the intx with int region
+		Pt a = segup[i-1].A; Pt b = segup[i-1].B;
+		Pt c = segup[i].A; Pt d = segup[i].B;
+		if (a.di(b) < c.di(d)) {
+			Pt q(c.x + (b.x - a.x), c.y + (b.y - a.y));
+			Quad Q(a, b, q, c); Q.display();
+			quadint.push_back(Q); 
+		}
+		else {
+			Pt q(a.x + (d.x - c.x), a.y + (d.y - c.y));
+			Quad Q(a, q, d, c); Q.display();
+			quadint.push_back(Q);
+		}
+	}
+
+	for (int i = 1; i < segdn.size(); i++) {
+		//a is point on spine & b is the intx with int region
+		Pt a = segdn[i - 1].A; Pt b = segdn[i - 1].B;
+		Pt c = segdn[i].A; Pt d = segdn[i].B;
+		if (a.di(b) < c.di(d)) {
+			Pt q(c.x + (b.x - a.x), c.y + (b.y - a.y));
+			Quad Q(a, b, q, c); //Q.display();
+			quadint.push_back(Q);
+		}
+		else {
+			Pt q(a.x + (d.x - c.x), a.y + (d.y - c.y));
+			Quad Q(a, q, d, c);// Q.display();
+			quadint.push_back(Q);
+		}
+	}
+
+	for (int i = 0; i < quadint.size()-1; i++) {
+		Pt a = quadint[i].A; Pt b = quadint[i].B; Pt c = quadint[i].C; Pt d = quadint[i].D;
+		Pt e((a.x + d.x) / 2, (a.y + d.y) / 2); Pt f((b.x + c.x) / 2, (b.y + c.y) / 2);
+		ofDrawLine(e.x, e.y, f.x, f.y);
+		Pt u((f.x - e.x) / e.di(f), (f.y - e.y) / e.di(f)); Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
+		int j = 0;
+		while(j<e.di(f)- spinequadle){
+			Pt p(e.x + u.x*j, e.y + u.y*j);
+			Pt p_(e.x + u.x*(j+spinequadle), e.y + u.y*(j+ spinequadle));
+			Pt q(p.x + v.x*spinequadde, p.y + v.y*spinequadde);
+			Pt q_(p.x + v_.x*spinequadde, p.y + v_.y*spinequadde);
+			Pt r(p_.x + v.x*spinequadde, p_.y + v.y*spinequadde);
+			Pt r_(p_.x + v_.x*spinequadde, p_.y + v_.y*spinequadde);
+			Quad Q1(r, p_, p, q); Q1.display();
+			Quad Q2(p_, r_, q_, p); Q2.display();
+			//ofEllipse(p.x, p.y, 10, 10);
+			ofDrawLine(p.x, p.y, q.x, q.y); ofDrawLine(p.x, p.y, q_.x, q_.y);
+			j += spinequadle;
+		}
+	}
 }
 
 vector<ofPath> ofApp::genDoorSwing(Quad quad, int T) {
@@ -577,9 +729,20 @@ vector<Quad> ofApp::periIntQuad(Quad Q, float Le, float De) {
 
 void ofApp::keyPressed(int key){
 	if (key == 'r' || key == 'R') {
+		//original figure
 		iniptvec = oriptvec;
+
+		//cross spine
 		spinehorseg.setup(Pt(500, ofGetHeight() / 2), Pt(1400, ofGetHeight() / 2));
 		spineverseg.setup(Pt(950, 200), Pt(950, ofGetHeight() - 200));
+
+		//smooth spine 
+		Pt p0(500, 450); Pt p1(600, 450); Pt p2(700, 450);
+		Pt p3(800, 450); Pt p4(900, 450); Pt p5(1000, 450);
+		Pt p6(1100, 450); Pt p7(1200, 450); inismoothspinept.clear();
+		inismoothspinept.push_back(p0); inismoothspinept.push_back(p1); inismoothspinept.push_back(p2);
+		inismoothspinept.push_back(p3); inismoothspinept.push_back(p4); inismoothspinept.push_back(p5);
+		inismoothspinept.push_back(p6); inismoothspinept.push_back(p7);
 	}
 	if (key == 's' || key == 'S') {
 		global_image_counter++;
@@ -599,19 +762,26 @@ void ofApp::keyReleased(int key){
 
 void ofApp::mouseMoved(int x, int y ){
 	float S = 35;
-	for (int i = 0; i < iniptvec.size(); i++) {
-		Pt m(x, y);	if (m.di(iniptvec[i]) < S) { iniptvec[i].locked = 1; }
-	}
-	for (int i = 0; i < iniptvec.size(); i++) {
-		if (iniptvec[i].di(Pt(x, y)) > S) {
-			iniptvec[i].locked = 0;
+	if (controlpts == true) {
+		for (int i = 0; i < iniptvec.size(); i++) {
+			Pt m(x, y);	if (m.di(iniptvec[i]) < S) { iniptvec[i].locked = 1; }
+		}
+		for (int i = 0; i < iniptvec.size(); i++) {
+			if (iniptvec[i].di(Pt(x, y)) > S) {
+				iniptvec[i].locked = 0;
+			}
 		}
 	}
-
+	
 	if (spinehorseg.A.di(Pt(x, y)) < S) { spinehorseg.A.locked = 1; }	else { spinehorseg.A.locked = 0; }
 	if (spinehorseg.B.di(Pt(x, y)) < S) { spinehorseg.B.locked = 1; }	else { spinehorseg.B.locked = 0; }
 	if (spineverseg.A.di(Pt(x, y)) < S) { spineverseg.A.locked = 1; }	else { spineverseg.A.locked = 0; }
 	if (spineverseg.B.di(Pt(x, y)) < S) { spineverseg.B.locked = 1; }	else { spineverseg.B.locked = 0; }
+
+	for (int i = 0; i < inismoothspinept.size(); i++) {
+		if (inismoothspinept[i].di(Pt(x, y)) < 30) { (inismoothspinept[i].locked = 1); }
+		else { inismoothspinept[i].locked = 0; }
+	}
 }
 
 void ofApp::mouseDragged(int x, int y, int button){
@@ -624,6 +794,11 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 	if (spineverseg.A.locked == 1) { spineverseg.A.setup(x, y); }
 	if (spineverseg.B.locked == 1) { spineverseg.B.setup(x, y); }
+
+	for (int i = 0; i < inismoothspinept.size(); i++) {
+		if (inismoothspinept[i].locked == 1) { inismoothspinept[i].setup(x, y); }
+	}
+
 }
 
 void ofApp::mousePressed(int x, int y, int button){
