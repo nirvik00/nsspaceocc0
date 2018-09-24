@@ -112,6 +112,7 @@ class ofApp : public ofBaseApp{
 		vector<vector<Pt>> getcrvpts(vector<Pt>);
 		vector<Pt> gensmoothboundary(vector<Pt>);
 		vector<Pt> genintsmoothspine(vector<Pt>);
+		vector<Pt> genintsmoothspine3pt(vector<Pt>);
 		vector<Pt> geninternalboundary(vector<Pt>, float);
 		vector<Pt> Lerp(Pt, Pt, Pt);
 		Pt intxPt(Pt, Pt, Pt, Pt);
@@ -141,6 +142,9 @@ class ofApp : public ofBaseApp{
 		Seg spinehorseg, spineverseg;
 
 		//global variables
+		string MSG, title;
+		
+
 		int global_image_counter = 0;
 		vector<Tri> trivec;
 		vector<Seg>straightSeg;
@@ -189,6 +193,7 @@ class ofApp : public ofBaseApp{
 		ofParameter<string>generalintparamsblank;
 		ofParameter<bool>showintregion;
 		ofParameter<int>intsubdiv; 
+		ofParameter<int>smoothspinedist;
 		ofParameter<float>spinecorrde;
 		ofParameter<float>spinequadle;
 		ofParameter<float>spinequadde;

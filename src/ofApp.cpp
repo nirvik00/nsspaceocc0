@@ -123,6 +123,51 @@ vector<Pt> ofApp::genintsmoothspine(vector<Pt>ptvec) {
 	return newpts;
 }
 
+vector<Pt> ofApp::genintsmoothspine3pt(vector<Pt>ptvec) {
+	vector<Pt> newpts;
+	Pt a = ptvec[0];
+	Pt b = ptvec[1];
+	Pt c = ptvec[2];
+
+	Pt a_(a.x + (b.x - a.x)*ICurvature, a.y + (b.y - a.y)*ICurvature);
+	Pt c_(c.x + (b.x - c.x)*ICurvature, c.y + (b.y - c.y)*ICurvature);
+	Pt ba(b.x + (a.x - b.x)*ICurvature, b.y + (a.y - b.y)*ICurvature);
+	Pt bc(b.x + (c.x - b.x)*ICurvature, b.y + (c.y - b.y)*ICurvature);
+
+	//construct the first set of points
+	for (float j = 0; j < 1.0; j += 0.01) {
+		Pt p(a.x + (a_.x - a.x)*j, a.y + (a_.y - a.y)*j);
+		newpts.push_back(p);
+	}
+
+	//construct the bezier curve
+	vector<Pt> pts_a_b;
+	for (float j = 0; j < 1.0; j+=0.01) {
+		Pt p(a_.x + (b.x - a_.x)*j, a_.y + (b.y - a_.y)*j);
+		pts_a_b.push_back(p);
+	}
+	vector<Pt> pts_b_c;
+	for (float j = 0; j < 1.0; j += 0.01) {
+		Pt p(b.x + (c_.x - b.x)*j, b.y + (c_.y - b.y)*j);
+		pts_b_c.push_back(p);
+	}
+	int k = 0;
+	for (float j = 0; j < 1.0; j += 0.01) {
+		Pt m = pts_a_b[k]; Pt n = pts_b_c[k];
+		Pt p(m.x + (n.x - m.x)*j, m.y + (n.y - m.y)*j);
+		newpts.push_back(p);
+		k++;
+	}
+	
+	//construct the last set of points
+	for (float j = 0; j < 1.0; j += 0.01) {
+		Pt p(c_.x + (c.x - c_.x)*j, c_.y + (c.y - c_.y)*j);
+		newpts.push_back(p);
+	}
+
+	return newpts;
+}
+
 vector<Pt> ofApp::gensmoothboundary(Pt a, Pt b, Pt c, Pt d) {
 	vector<Pt> abc = Lerp(a, b, c);
 	return abc;
@@ -214,6 +259,7 @@ void ofApp::setup(){
 	parameters.add(showintregion.set("Show I region", false));
 
 	parameters.add(generalintparamsblank.set("INTERNAL PARAMETERS"));
+	parameters.add(smoothspinedist.set("Smooth Spine Di", 25, 5, 50));
 	parameters.add(spinecorrde.set("I. Corr", 10, 0, 25));
 	parameters.add(spinequadle.set("I. Length", 40, 5, 125));
 	parameters.add(spinequadde.set("I. Depth", 30, 5, 125));
@@ -221,27 +267,46 @@ void ofApp::setup(){
 	gui.setup(parameters);
 	gui.setBackgroundColor(ofColor(255,150,255));
 
-	L = PeripheralCellLength; W = PeripheralCellLength; Corridor = Corridor0;
-
-	Pt p0(500, 450); Pt p1(600, 450); Pt p2(700, 450);
-	Pt p3(800, 450); Pt p4(900, 450); Pt p5(1000, 450);
-	Pt p6(1100, 450); Pt p7(1175, 450); 
-	inismoothspinept.push_back(p0); inismoothspinept.push_back(p1); inismoothspinept.push_back(p2);
-	inismoothspinept.push_back(p3); inismoothspinept.push_back(p4); inismoothspinept.push_back(p5);
-	inismoothspinept.push_back(p6); inismoothspinept.push_back(p7);
-	
-	ofSetBackgroundColor(255); ofSetColor(0); ofFill();
+	//points for the initial outer boundary 
 	iniptvec.push_back(Pt(550, 100)); iniptvec.push_back(Pt(950, 250)); iniptvec.push_back(Pt(1350, 100));
 	iniptvec.push_back(Pt(1200, 450)); iniptvec.push_back(Pt(1350, 850)); iniptvec.push_back(Pt(950, 700));
 	iniptvec.push_back(Pt(550, 850)); iniptvec.push_back(Pt(700, 450)); iniptvec.push_back(Pt(550, 100));
 	oriptvec = iniptvec;
 
+	L = PeripheralCellLength; W = PeripheralCellLength; Corridor = Corridor0;
+	
+	Pt p0(500, 450); Pt p1(600, 450); Pt p2(700, 450);
+	Pt p3(800, 450); Pt p4(900, 450); Pt p5(1000, 450);
+	Pt p6(1100, 450); Pt p7(1175, 450); 
+	inismoothspinept.push_back(p0); 
+	//inismoothspinept.push_back(p1); 
+	//inismoothspinept.push_back(p2);
+	//inismoothspinept.push_back(p3); 
+	inismoothspinept.push_back(p4); 
+	//inismoothspinept.push_back(p5);
+	//inismoothspinept.push_back(p6); 
+	inismoothspinept.push_back(p7);
+	
+	// horizontal and vertical cross axes
 	spinehorseg.setup(Pt(500, ofGetHeight() / 2), Pt(1400, ofGetHeight() / 2));
 	spineverseg.setup(Pt(950, 200), Pt(950, ofGetHeight() - 50));
 
 }
 
 void ofApp::update(){
+
+	MSG = "Keyboard controls:";
+	MSG += "\n------------------";
+	MSG += "\nPress 'r' 'R' to reset to original drawing";
+	MSG += "\nPress 's' 'S' to save image";
+	MSG += "\nPress 'e' 'E' to control spine";
+	MSG += "\nPress 'f' 'F' to stop control spine";
+	MSG += "\nPress 'g' 'G' to subdivide I quads";
+	MSG += "\nPress 'h' 'H' to gen peripheral I quads";
+	title = "PhD student: Nirvik Saha (G.I.T.) \t\tadvisor: Dennis R Shelden (G.I.T.) \t\tadvisor: John R Haymaker (P + W)";
+
+
+
 	L = PeripheralCellLength; W = PeripheralCellDepth; Corridor = Corridor0; Curvature = PCurvature;
 
 	revptvec.clear(); intptvec.clear(); revintptvec.clear(); intgridptvec.clear(); revintgridptvec.clear();
@@ -274,11 +339,13 @@ void ofApp::update(){
 	}
 	
 	//get the smooth spine
-	fsmoothspinept = genintsmoothspine(inismoothspinept);
+	fsmoothspinept = genintsmoothspine3pt(inismoothspinept);
 	
 }
 
 void ofApp::draw() {
+	ofBackground(255);
+
 	trivec.clear();
 	//plot smooth boundaries	
 	float sW = 2; ofColor colr = (ofColor(255, 0, 0, 50)); 
@@ -424,16 +491,7 @@ void ofApp::draw() {
 
 	ofFill(); ofSetColor(ofColor(0, 0, 0, 50)); ofDrawRectangle(15, 675, 350, 150);
 	ofSetColor(0, 0, 0);
-	string MSG = "Keyboard controls:";
-	MSG += "\n------------------";
-	MSG += "\nPress 'r' 'R' to reset to original drawing";
-	MSG += "\nPress 's' 'S' to save image";
-	MSG += "\nPress 'e' 'E' to control spine";
-	MSG += "\nPress 'f' 'F' to stop control spine";
-	MSG += "\nPress 'g' 'G' to subdivide I quads";
-	MSG += "\nPress 'h' 'H' to gen peripheral I quads";
 	ofDrawBitmapString(MSG, 20, 700);
-	string title = "PhD student: Nirvik Saha (G.I.T.) \t\tadvisor: Dennis R Shelden (G.I.T.) \t\tadvisor: John R Haymaker (P + W)";
 	ofSetColor(0, 0, 0, 255); ofDrawBitmapString(title, 100, ofGetHeight() - 30);
 	gui.draw();
 
@@ -457,7 +515,6 @@ void ofApp::draw() {
 			}
 		}
 	}
-
 
 	if (subdivquads.size() > 0) {
 		intquads.clear(); float Le = spinequadle; float De = spinequadde; float De1 = (De / cos(PI / 4));
@@ -572,12 +629,24 @@ void ofApp::draw() {
 			//ofDrawEllipse(a.x, a.y, 10, 10);
 		}		
 	}
+	
+	//draw the smooth spine
+	ofPath smooothspinepath;
+	for (int i = 0; i < intspinepts.size(); i++) {
+		Pt a = intspinepts[i];
+		if(i==0){ smooothspinepath.moveTo(a.x, a.y); }
+		else { smooothspinepath.lineTo(a.x, a.y); }
+	}
+	smooothspinepath.setStrokeWidth(10); smooothspinepath.setStrokeColor(ofColor(150, 255, 150, 50));
+	smooothspinepath.draw();
 
-	//get spaced-out points
+	//get spaced-out points - using spine corr distance
 	vector<Pt> reqspinepts; Pt prev(intspinepts[0]);
 	for (int i = 0; i < intspinepts.size(); i++) {
 		float d = intspinepts[i].di(prev);
-		if (d > (spinequadle * 2) + spinecorrde) {
+		if (i%smoothspinedist==0 && i>0) {
+			Pt a = intspinepts[i];
+			ofSetColor(0); ofSetLineWidth(1); ofEllipse(a.x, a.y, 10, 10);
 			reqspinepts.push_back(intspinepts[i]);
 			prev.setup(intspinepts[i].x, intspinepts[i].y);
 		}
@@ -590,6 +659,68 @@ void ofApp::draw() {
 		Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
 		Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
 		Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
+		//ofDrawLine(a.x, a.y, e.x, e.y); ofDrawLine(a.x, a.y, f.x, f.y);
+		for (int j = 1; j < revintgridptvec.size(); j++) {
+			Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
+			Pt I = intxPt4(e, a, m, n);
+			if (I.x > 0 && I.y > 0) {
+				//ofEllipse(I.x, I.y, 20, 20); ofDrawLine(a.x, a.y, I.x, I.y);
+				segdn.push_back(Seg(a, I));
+			}
+			Pt J = intxPt4(f, a, m, n);
+			if (J.x > 0 && J.y > 0) {
+				//ofEllipse(J.x, J.y, 20, 20); ofDrawLine(a.x, a.y, J.x, J.y);
+				segup.push_back(Seg(a, J));
+			}
+		}
+	}
+	vector<Seg> unitseg;
+	for (int i = 0; i < segup.size(); i++) {
+		Pt a_ = segup[i].A;//this is point on spine
+		Pt b = segup[i].B;//this is intx point on int region
+		Pt u((b.x - a_.x) / a_.di(b), (b.y - a_.y) / a_.di(b));
+		// move a off spine to account for internal corridor along spine
+		Pt a(a_.x + u.x*spinecorrde, a_.y + u.y*spinecorrde);
+		int achle = 0;
+		while (achle < a.di(b)-spinequadle) {
+			Pt c(a.x + u.x*achle, a.y + u.y*achle); Pt d(a.x + u.x*2*achle, a.y + u.y*2*achle);
+			if (intpolyline.inside(ofVec3f(c.x, c.y, 0)) && intpolyline.inside(ofVec3f(d.x, d.y, 0))) { unitseg.push_back(Seg(c, d)); }
+			achle += 2*spinequadle;
+		}
+	}
+	for (int i = 0; i < segdn.size(); i++) {
+		Pt a_ = segdn[i].A;//this is point on spine
+		Pt b = segdn[i].B;//this is intx point on int region
+		Pt u((b.x - a_.x) / a_.di(b), (b.y - a_.y) / a_.di(b));
+		// move a off spine to account for internal corridor along spine
+		Pt a(a_.x + u.x*spinecorrde, a_.y + u.y*spinecorrde);
+		int achle = 0;
+		while (achle < a.di(b) - spinequadle) {
+			Pt c(a.x + u.x*achle, a.y + u.y*achle); Pt d(a.x + u.x * 2 * achle, a.y + u.y * 2 * achle);
+			if (intpolyline.inside(ofVec3f(c.x, c.y, 0)) && intpolyline.inside(ofVec3f(d.x, d.y, 0))) { unitseg.push_back(Seg(c, d)); }
+			achle += 2 * spinequadle;
+		}
+	}
+
+	for (int i = 0; i < unitseg.size(); i++) {
+		Pt a = unitseg[i].A; Pt b = unitseg[i].B; 
+		float d = spinequadde;
+		Pt u((b.x - a.x)*d / a.di(b), (b.y - a.y)*d / a.di(b));
+		Pt p(a.x-u.y, a.y+u.x); Pt p_(a.x+u.y, a.y-u.x);
+		Pt q(b.x - u.y, b.y + u.x); Pt q_(b.x + u.y, b.y - u.x);
+		Quad q0(a, p, q, b); Quad q1(a, p_, q_, b);
+		q0.display(); q1.display();
+	}
+
+	/*
+	//normals from interior spine points  + intersection of normals from spine wrt interior
+	vector<Seg> segup; vector<Seg> segdn;
+	for (int i = 1; i < reqspinepts.size(); i++) {
+		Pt a = reqspinepts[i - 1]; Pt b = reqspinepts[i];
+		Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
+		Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
+		Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
+		//ofDrawLine(a.x, a.y, e.x, e.y); ofDrawLine(a.x, a.y, f.x, f.y);
 		for (int j = 1; j < revintgridptvec.size(); j++) {
 			Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
 			Pt I = intxPt4(e, a, m, n);
@@ -599,22 +730,23 @@ void ofApp::draw() {
 			}
 			Pt J = intxPt4(f, a, m, n);
 			if (J.x > 0 && J.y > 0) {
-				//ofEllipse(I.x, I.y, 20, 20);
+				//ofEllipse(J.x, J.y, 20, 20);
 				segup.push_back(Seg(a, J));
 			}
 		}
 	}
-
+	
+	
 	//construct quads of rational rects UP
 	vector<Quad>quadint;
 	for (int i = 1; i < segup.size(); i++) {
 		//a is point on spine & b is the intx with int region
-		Pt a = segup[i-1].A; Pt b = segup[i-1].B;
+		Pt a = segup[i - 1].A; Pt b = segup[i - 1].B;
 		Pt c = segup[i].A; Pt d = segup[i].B;
 		if (a.di(b) < c.di(d)) {
 			Pt q(c.x + (b.x - a.x), c.y + (b.y - a.y));
 			Quad Q(a, b, q, c); Q.display();
-			quadint.push_back(Q); 
+			quadint.push_back(Q);
 		}
 		else {
 			Pt q(a.x + (d.x - c.x), a.y + (d.y - c.y));
@@ -622,7 +754,6 @@ void ofApp::draw() {
 			quadint.push_back(Q);
 		}
 	}
-
 	for (int i = 1; i < segdn.size(); i++) {
 		//a is point on spine & b is the intx with int region
 		Pt a = segdn[i - 1].A; Pt b = segdn[i - 1].B;
@@ -638,6 +769,8 @@ void ofApp::draw() {
 			quadint.push_back(Q);
 		}
 	}
+
+	
 
 	for (int i = 0; i < quadint.size()-1; i++) {
 		Pt a = quadint[i].A; Pt b = quadint[i].B; Pt c = quadint[i].C; Pt d = quadint[i].D;
@@ -659,6 +792,9 @@ void ofApp::draw() {
 			j += spinequadle;
 		}
 	}
+
+	*/
+
 }
 
 vector<ofPath> ofApp::genDoorSwing(Quad quad, int T) {
