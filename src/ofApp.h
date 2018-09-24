@@ -53,6 +53,7 @@ public:
 	Seg() {};
 	Seg(Pt a, Pt b) { A = a; B = b; }
 	void setup(Pt a, Pt b) { A = a; B = b; }
+	void display() { ofSetColor(150); ofDrawLine(A.x, A.y, B.x, B.y); }
 };
 
 struct sortSegDesc {
@@ -160,6 +161,7 @@ class ofApp : public ofBaseApp{
 
 		int controlspine = 0;
 		int generatesubdivsystem = 0;
+		int generatetreesystem = 0;
 		vector<Quad> intsubdivgeneratequads;
 		vector<Quad> intperipgeneratequads;
 		
@@ -170,8 +172,6 @@ class ofApp : public ofBaseApp{
 
 
 		/*	gui parameters and objects	*/
-		//int rush = 0; 
-		Pt globaldiaA; Pt globaldiaB;
 		
 		ofParameter<string>boundaryconfigblank;
 		ofParameterGroup parameters;
@@ -187,11 +187,13 @@ class ofApp : public ofBaseApp{
 		ofParameter<bool>controlpts;
 
 		ofParameter<string>crossconfigblank;
-		ofParameter<bool>spinecontrolpts;
+		ofParameter<bool>crossspinecontrolpts;
+		ofParameter<bool>smoothspinecontrolpts;
+		ofParameter<bool>showintregion;
 		ofParameter<float>ICurvature;
 
 		ofParameter<string>generalintparamsblank;
-		ofParameter<bool>showintregion;
+		
 		ofParameter<int>intsubdiv; 
 		ofParameter<int>smoothspinedist;
 		ofParameter<float>spinecorrde;

@@ -253,14 +253,15 @@ void ofApp::setup(){
 	parameters.add(DoorDepth.set("Door Depth ", 15, 5, 25));
 	
 	parameters.add(crossconfigblank.set("CROSS SPINE CONFIG"));
-	parameters.add(spinecontrolpts.set("Spine Control Pts", false));
+	parameters.add(crossspinecontrolpts.set("Show Cross Spine", false));
+	parameters.add(smoothspinecontrolpts.set("Show Smooth Spine", false));
 	parameters.add(ICurvature.set("Curvature", 0.6972, 0.51, 0.99f));
 	parameters.add(intsubdiv.set("Number of subdiv", 1, 0, 3));
 	parameters.add(showintregion.set("Show I region", false));
 
 	parameters.add(generalintparamsblank.set("INTERNAL PARAMETERS"));
-	parameters.add(smoothspinedist.set("Smooth Spine Di", 25, 5, 50));
-	parameters.add(spinecorrde.set("I. Corr", 10, 0, 25));
+	parameters.add(smoothspinedist.set("Smooth Spine Di", 40, 5, 50));
+	parameters.add(spinecorrde.set("I. Corr", 15, 0, 25));
 	parameters.add(spinequadle.set("I. Length", 40, 5, 125));
 	parameters.add(spinequadde.set("I. Depth", 30, 5, 125));
 
@@ -516,79 +517,83 @@ void ofApp::draw() {
 		}
 	}
 
-	if (subdivquads.size() > 0) {
-		intquads.clear(); float Le = spinequadle; float De = spinequadde; float De1 = (De / cos(PI / 4));
-		for (int i = 0; i < subdivquads.size(); i++) {
-			Quad Q = subdivquads[i];
-			Pt a = Q.A; Pt b = Q.B; Pt c = Q.C; Pt d = Q.D;
 
-			Pt t((b.x - a.x)*De1 / a.di(b), (b.y - a.y)*De1 / a.di(b));
-			Pt u((c.x - b.x)*De1 / b.di(c), (c.y - b.y)*De1 / b.di(c));
-			Pt v((d.x - c.x)*De1 / c.di(d), (d.y - c.y)*De1 / c.di(d));
-			Pt w((a.x - d.x)*De1 / a.di(d), (a.y - d.y)*De1 / a.di(d));
-			
-			Pt m(a.x + t.x*cos(PI / 4) - t.y*sin(PI / 4), a.y + t.x*sin(PI / 4) + t.y*cos(PI / 4));
-			Pt n(b.x + u.x*cos(PI / 4) - u.y*sin(PI / 4), b.y + u.x*sin(PI / 4) + u.y*cos(PI / 4));
-			Pt o(c.x + v.x*cos(PI / 4) - v.y*sin(PI / 4), c.y + v.x*sin(PI / 4) + v.y*cos(PI / 4));
-			Pt p(d.x + w.x*cos(PI / 4) - w.y*sin(PI / 4), d.y + w.x*sin(PI / 4) + w.y*cos(PI / 4));
-			
-			//these are the quads with angle bisector
-			Quad Q0(a, m, n, b); Quad Q1(b, n, o, c); Quad Q2(c, o, p, d); Quad Q3(d, p, m, a);
+	//for peripheral system: this is a boundary with a hole such that the boundary gets filled on one side 
+	if (generatesubdivsystem == 1) {
+		if (subdivquads.size() > 0) {
+			intquads.clear(); float Le = spinequadle; float De = spinequadde; float De1 = (De / cos(PI / 4));
+			for (int i = 0; i < subdivquads.size(); i++) {
+				Quad Q = subdivquads[i];
+				Pt a = Q.A; Pt b = Q.B; Pt c = Q.C; Pt d = Q.D;
 
-			//for 1st quad : a->m_, n->n_
-			//for 2nd quad : b->n_, o->o_
-			//for 3rd quad : c->o_, p->p_
-			//for 4th quad : d->p_, m->m_
-			//Pt m_(m.x, a.y); Pt n_(b.x, n.y); Pt o_(o.x, c.y); Pt p_(d.x, p.y);
-			//Quad Q0(m_, m, n_, b); Quad Q1(n_, n, o_, c); Quad Q2(o_, o, p_, d); Quad Q3(p_, p, m_, a);
+				Pt t((b.x - a.x)*De1 / a.di(b), (b.y - a.y)*De1 / a.di(b));
+				Pt u((c.x - b.x)*De1 / b.di(c), (c.y - b.y)*De1 / b.di(c));
+				Pt v((d.x - c.x)*De1 / c.di(d), (d.y - c.y)*De1 / c.di(d));
+				Pt w((a.x - d.x)*De1 / a.di(d), (a.y - d.y)*De1 / a.di(d));
 			
-			//Q0.display(); Q1.display(); Q2.display(); Q3.display();
+				Pt m(a.x + t.x*cos(PI / 4) - t.y*sin(PI / 4), a.y + t.x*sin(PI / 4) + t.y*cos(PI / 4));
+				Pt n(b.x + u.x*cos(PI / 4) - u.y*sin(PI / 4), b.y + u.x*sin(PI / 4) + u.y*cos(PI / 4));
+				Pt o(c.x + v.x*cos(PI / 4) - v.y*sin(PI / 4), c.y + v.x*sin(PI / 4) + v.y*cos(PI / 4));
+				Pt p(d.x + w.x*cos(PI / 4) - w.y*sin(PI / 4), d.y + w.x*sin(PI / 4) + w.y*cos(PI / 4));
+			
+				//these are the quads with angle bisector
+				Quad Q0(a, m, n, b); Quad Q1(b, n, o, c); Quad Q2(c, o, p, d); Quad Q3(d, p, m, a);
 
-			vector<Quad> quad0 = periIntQuad(Q0, Le, De);
-			for (int j = 0; j < quad0.size(); j++) {
-				quad0[j].display();
-				vector<ofPath> drpaths = genDoorSwing(quad0[j], j);
-				for (int k = 0; k < drpaths.size(); k++) {
-					ofPath dpath = drpaths[k];
-					dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-					dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				//for 1st quad : a->m_, n->n_
+				//for 2nd quad : b->n_, o->o_
+				//for 3rd quad : c->o_, p->p_
+				//for 4th quad : d->p_, m->m_
+				//Pt m_(m.x, a.y); Pt n_(b.x, n.y); Pt o_(o.x, c.y); Pt p_(d.x, p.y);
+				//Quad Q0(m_, m, n_, b); Quad Q1(n_, n, o_, c); Quad Q2(o_, o, p_, d); Quad Q3(p_, p, m_, a);
+			
+				//Q0.display(); Q1.display(); Q2.display(); Q3.display();
+
+				vector<Quad> quad0 = periIntQuad(Q0, Le, De);
+				for (int j = 0; j < quad0.size(); j++) {
+					quad0[j].display();
+					vector<ofPath> drpaths = genDoorSwing(quad0[j], j);
+					for (int k = 0; k < drpaths.size(); k++) {
+						ofPath dpath = drpaths[k];
+						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
+						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+					}
 				}
-			}
-			vector<Quad> quad1 = periIntQuad(Q1, Le, De);
-			for (int j = 0; j < quad1.size(); j++) {
-				quad1[j].display();
-				vector<ofPath> drpaths = genDoorSwing(quad1[j], j);
-				for (int k = 0; k < drpaths.size(); k++) {
-					ofPath dpath = drpaths[k];
-					dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-					dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				vector<Quad> quad1 = periIntQuad(Q1, Le, De);
+				for (int j = 0; j < quad1.size(); j++) {
+					quad1[j].display();
+					vector<ofPath> drpaths = genDoorSwing(quad1[j], j);
+					for (int k = 0; k < drpaths.size(); k++) {
+						ofPath dpath = drpaths[k];
+						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
+						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+					}
 				}
-			}
-			vector<Quad> quad2 = periIntQuad(Q2, Le, De);
-			for (int j = 0; j < quad2.size(); j++) {
-				quad2[j].display();
-				vector<ofPath> drpaths = genDoorSwing(quad2[j], j);
-				for (int k = 0; k < drpaths.size(); k++) {
-					ofPath dpath = drpaths[k];
-					dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-					dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				vector<Quad> quad2 = periIntQuad(Q2, Le, De);
+				for (int j = 0; j < quad2.size(); j++) {
+					quad2[j].display();
+					vector<ofPath> drpaths = genDoorSwing(quad2[j], j);
+					for (int k = 0; k < drpaths.size(); k++) {
+						ofPath dpath = drpaths[k];
+						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
+						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+					}
 				}
-			}
-			vector<Quad> quad3 = periIntQuad(Q3, Le, De);
-			for (int j = 0; j < quad3.size(); j++) {
-				quad3[j].display();
-				vector<ofPath> drpaths = genDoorSwing(quad3[j], j);
-				for (int k = 0; k < drpaths.size(); k++) {
-					ofPath dpath = drpaths[k];
-					dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-					dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				vector<Quad> quad3 = periIntQuad(Q3, Le, De);
+				for (int j = 0; j < quad3.size(); j++) {
+					quad3[j].display();
+					vector<ofPath> drpaths = genDoorSwing(quad3[j], j);
+					for (int k = 0; k < drpaths.size(); k++) {
+						ofPath dpath = drpaths[k];
+						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
+						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+					}
 				}
 			}
 		}
 	}
-	
+
 	//spineseg plot
-	if (spinecontrolpts == 1) {
+	if (crossspinecontrolpts == 1) {
 		if (spinehorseg.A.locked == 1) { ofFill(); ofSetColor(255, 0, 0, 150); ofDrawEllipse(spinehorseg.A.x, spinehorseg.A.y, 15, 15); }
 		if (spinehorseg.B.locked == 1) { ofFill(); ofSetColor(255, 0, 0, 150); ofDrawEllipse(spinehorseg.B.x, spinehorseg.B.y, 15, 15); }
 		ofSetColor(0, 0, 255, 50); ofSetLineWidth(7); ofDrawLine(spinehorseg.A.x, spinehorseg.A.y, spinehorseg.B.x, spinehorseg.B.y);
@@ -601,203 +606,177 @@ void ofApp::draw() {
 		ofSetColor(0, 0, 0, 150); ofSetLineWidth(1); ofNoFill(); ofDrawEllipse(spineverseg.B.x, spineverseg.B.y, 25, 25);
 	}
 
-	//plot smooth spine
-	for (int i = 0; i < inismoothspinept.size(); i++) {
-		ofSetLineWidth(1);
-		if (inismoothspinept[i].locked == 1) {
-			ofFill(); ofSetColor(255, 0, 0, 150);
-			ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 10, 10);
-		}
-		else {
-			ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 10, 10);
-		}		
-		ofNoFill(); ofSetColor(0); ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 25, 25);
-	}
-	for (int i = 1; i < inismoothspinept.size(); i++) {
-		Pt a = inismoothspinept[i-1]; Pt b = inismoothspinept[i];
-		ofSetLineWidth(1); ofSetColor(150); ofDrawLine(a.x, a.y, b.x, b.y);
-	}
-
 
 	//points inside the interior polygon
-	vector<Pt> intspinepts; 
+	vector<Pt> intspinepts;
 	for (int i = 1; i < fsmoothspinept.size(); i++) {
 		Pt a = fsmoothspinept[i]; ofVec3f p(a.x, a.y, 0);
 		bool t = intpolyline.inside(p);
 		if (t == true) {
 			intspinepts.push_back(Pt(a.x, a.y));
 			//ofDrawEllipse(a.x, a.y, 10, 10);
-		}		
+		}
 	}
-	
-	//draw the smooth spine
-	ofPath smooothspinepath;
-	for (int i = 0; i < intspinepts.size(); i++) {
-		Pt a = intspinepts[i];
-		if(i==0){ smooothspinepath.moveTo(a.x, a.y); }
-		else { smooothspinepath.lineTo(a.x, a.y); }
-	}
-	smooothspinepath.setStrokeWidth(10); smooothspinepath.setStrokeColor(ofColor(150, 255, 150, 50));
-	smooothspinepath.draw();
 
-	//get spaced-out points - using spine corr distance
-	vector<Pt> reqspinepts; Pt prev(intspinepts[0]);
-	for (int i = 0; i < intspinepts.size(); i++) {
-		float d = intspinepts[i].di(prev);
-		if (i%smoothspinedist==0 && i>0) {
+	if (generatetreesystem == 1) {
+		//get spaced-out points - using spine corr distance
+		vector<Pt> reqspinepts; Pt prev(intspinepts[0]);
+		for (int i = 0; i < intspinepts.size(); i++) {
+			float d = intspinepts[i].di(prev);
+			if (i%smoothspinedist == 0 && i > 0 && d > spinequadle) {
+				Pt a = intspinepts[i];
+				ofSetColor(0); ofSetLineWidth(1); ofEllipse(a.x, a.y, 10, 10);
+				reqspinepts.push_back(intspinepts[i]);
+				prev.setup(intspinepts[i].x, intspinepts[i].y);
+			}
+		}
+
+		//normals from interior spine points  + intersection of normals from spine wrt interior
+		vector<Seg> segup; vector<Seg> segdn;
+		for (int i = 1; i < reqspinepts.size(); i++) {
+			Pt a = reqspinepts[i - 1]; Pt b = reqspinepts[i];
+			Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
+			Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
+			Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
+			//ofDrawLine(a.x, a.y, e.x, e.y); ofDrawLine(a.x, a.y, f.x, f.y);
+			for (int j = 1; j < revintgridptvec.size(); j++) {
+				Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
+				Pt I = intxPt4(e, a, m, n);
+				if (I.x > 0 && I.y > 0) {
+					//ofEllipse(I.x, I.y, 20, 20); ofDrawLine(a.x, a.y, I.x, I.y);
+					segdn.push_back(Seg(a, I));
+				}
+				Pt J = intxPt4(f, a, m, n);
+				if (J.x > 0 && J.y > 0) {
+					//ofEllipse(J.x, J.y, 20, 20); ofDrawLine(a.x, a.y, J.x, J.y);
+					segup.push_back(Seg(a, J));
+				}
+			}
+		}
+
+		vector<Seg> unitseg;
+		for (int i = 0; i < segup.size(); i++) {
+			Pt a_ = segup[i].A;//this is point on spine
+			Pt b = segup[i].B;//this is intx point on int region
+			Pt u((b.x - a_.x) / a_.di(b), (b.y - a_.y) / a_.di(b));
+			// move a off spine to account for internal corridor along spine
+			Pt a(a_.x + u.x*spinecorrde, a_.y + u.y*spinecorrde);
+			float j = 0;
+			while (j*spinequadle < a.di(b) - spinequadle) {
+				Pt e(a.x + u.x*j*spinequadle, a.y + u.y*j*spinequadle);
+				Pt f(a.x + u.x*(j + 1)*spinequadle, a.y + u.y*(j + 1)*spinequadle);
+				//ofDrawEllipse(e.x, e.y, 10, 10); ofDrawEllipse(f.x, f.y, 10, 10); ofDrawLine(e.x, e.y, f.x, f.y);
+				if (intpolyline.inside(ofVec3f(e.x, e.y, 0))) { // && intpolyline.inside(ofVec3f(f.x, f.y, 0))) {
+					unitseg.push_back(Seg(e, f));
+				}
+				else {
+					break;
+				}
+				j++;
+			}
+		}
+		for (int i = 0; i < segdn.size(); i++) {
+			Pt a_ = segdn[i].A;//this is point on spine
+			Pt b = segdn[i].B;//this is intx point on int region
+			Pt u((b.x - a_.x) / a_.di(b), (b.y - a_.y) / a_.di(b));
+			// move a off spine to account for internal corridor along spine
+			Pt a(a_.x + u.x*spinecorrde, a_.y + u.y*spinecorrde);
+			float j = 0;
+			while (j*spinequadle < a.di(b) - spinequadle) {
+				Pt e(a.x + u.x*j*spinequadle, a.y + u.y*j*spinequadle);
+				Pt f(a.x + u.x*(j + 1)*spinequadle, a.y + u.y*(j + 1)*spinequadle);
+				if (intpolyline.inside(ofVec3f(e.x, e.y, 0))) {// && intpolyline.inside(ofVec3f(f.x, f.y, 0))) { 
+					unitseg.push_back(Seg(e, f));
+				}
+				else {
+					break;
+				}
+				j++;
+			}
+		}
+
+
+		//generate unit quads and display + plot door swings
+		vector<ofPath> dpathX;
+		for (int i = 0; i < unitseg.size(); i++) {
+			Pt a = unitseg[i].A; Pt b = unitseg[i].B;
+			float d = spinequadde; float d_ = DoorDepth;
+			Pt u((b.x - a.x)*d / a.di(b), (b.y - a.y)*d / a.di(b));//for the unit quad
+			Pt u_((b.x - a.x) / a.di(b), (b.y - a.y) / a.di(b));//for door swing
+
+			Pt p(a.x - u.y, a.y + u.x); Pt p_(a.x + u.y, a.y - u.x);
+			Pt q(b.x - u.y, b.y + u.x); Pt q_(b.x + u.y, b.y - u.x);
+			Quad q0(a, p, q, b); Quad q1(a, p_, q_, b);
+			q0.display(); q1.display();
+
+			ofSetColor(200, 0, 0, 50); ofSetLineWidth(5);
+			Pt g(p.x + u_.y, p.y - u_.x); Pt g_(p.x + u_.x, p.y + u_.y);
+			ofDrawLine(p.x, p.y, g.x, g.y); ofDrawLine(p.x, p.y, g_.x, g_.y);
+			Pt h(p_.x - u_.y, p_.y + u_.x); Pt h_(p_.x + u_.x, p_.y + u_.y);
+			ofDrawLine(p_.x, p_.y, h.x, h.y); ofDrawLine(p_.x, p_.y, h_.x, h_.y);
+
+			ofPath dpath0;
+			for (float k = 0; k < PI / 2; k += PI / 20) {
+				float ang = 2 * PI - k;
+				float x = u_.x*cos(ang)*DoorDepth - u_.y*sin(ang)*DoorDepth;
+				float y = u_.x*sin(ang)*DoorDepth + u_.y*cos(ang)*DoorDepth;
+				Pt P(p.x + x, p.y + y); ofSetColor(0); ofFill(); ofEllipse(P.x, P.y, 2, 2);
+				if (k == 0) { dpath0.moveTo(p.x, p.y); }
+				else { dpath0.lineTo(p.x, p.y); }
+			}
+			dpathX.push_back(dpath0);
+
+			ofPath dpath1;
+			for (float k = 0; k < PI / 2; k += PI / 20) {
+				float ang = k;
+				float x = u_.x*cos(ang)*DoorDepth - u_.y*sin(ang)*DoorDepth;
+				float y = u_.x*sin(ang)*DoorDepth + u_.y*cos(ang)*DoorDepth;
+				Pt P(p_.x + x, p_.y + y); ofSetColor(0); ofFill(); ofEllipse(P.x, P.y, 2, 2);
+				if (k == 0) { dpath1.moveTo(p_.x, p_.y); }
+				else { dpath1.lineTo(p_.x, p_.y); }
+			}
+			dpathX.push_back(dpath1);
+		}
+		//door swing of smooth spine 
+		for (int i = 0; i < dpathX.size(); i++) {
+			dpathX[i].setFilled(true); dpathX[i].setFillColor(ofColor(255, 255, 255));
+			dpathX[i].setStrokeColor(ofColor(0, 0, 0)); dpathX[i].setStrokeWidth(2);
+			dpathX[i].draw();
+		}
+	}
+
+	//plot smooth spine + spine curve
+	if (smoothspinecontrolpts == true) {
+		for (int i = 0; i < inismoothspinept.size(); i++) {
+			ofSetLineWidth(1);
+			if (inismoothspinept[i].locked == 1) {
+				ofFill(); ofSetColor(255, 0, 0, 150);
+				ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 10, 10);
+			}
+			else {
+				ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 10, 10);
+			}
+			ofNoFill(); ofSetColor(0); ofDrawEllipse(inismoothspinept[i].x, inismoothspinept[i].y, 25, 25);
+		}
+		for (int i = 1; i < inismoothspinept.size(); i++) {
+			Pt a = inismoothspinept[i - 1]; Pt b = inismoothspinept[i];
+			ofSetLineWidth(1); ofSetColor(150); ofDrawLine(a.x, a.y, b.x, b.y);
+		}
+		//draw the smooth spine
+		ofPath smooothspinepath;
+		for (int i = 0; i < intspinepts.size(); i++) {
 			Pt a = intspinepts[i];
-			ofSetColor(0); ofSetLineWidth(1); ofEllipse(a.x, a.y, 10, 10);
-			reqspinepts.push_back(intspinepts[i]);
-			prev.setup(intspinepts[i].x, intspinepts[i].y);
+			if (i == 0) { smooothspinepath.moveTo(a.x, a.y); }
+			else { smooothspinepath.lineTo(a.x, a.y); }
 		}
+		smooothspinepath.setStrokeWidth(10); smooothspinepath.setFilled(false);
+		smooothspinepath.setStrokeColor(ofColor(150, 255, 150, 50));
+		smooothspinepath.draw();
 	}
-
-	//normals from interior spine points  + intersection of normals from spine wrt interior
-	vector<Seg> segup; vector<Seg> segdn;
-	for (int i = 1; i < reqspinepts.size(); i++) {
-		Pt a = reqspinepts[i - 1]; Pt b = reqspinepts[i];
-		Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
-		Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
-		Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
-		//ofDrawLine(a.x, a.y, e.x, e.y); ofDrawLine(a.x, a.y, f.x, f.y);
-		for (int j = 1; j < revintgridptvec.size(); j++) {
-			Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
-			Pt I = intxPt4(e, a, m, n);
-			if (I.x > 0 && I.y > 0) {
-				//ofEllipse(I.x, I.y, 20, 20); ofDrawLine(a.x, a.y, I.x, I.y);
-				segdn.push_back(Seg(a, I));
-			}
-			Pt J = intxPt4(f, a, m, n);
-			if (J.x > 0 && J.y > 0) {
-				//ofEllipse(J.x, J.y, 20, 20); ofDrawLine(a.x, a.y, J.x, J.y);
-				segup.push_back(Seg(a, J));
-			}
-		}
-	}
-	vector<Seg> unitseg;
-	for (int i = 0; i < segup.size(); i++) {
-		Pt a_ = segup[i].A;//this is point on spine
-		Pt b = segup[i].B;//this is intx point on int region
-		Pt u((b.x - a_.x) / a_.di(b), (b.y - a_.y) / a_.di(b));
-		// move a off spine to account for internal corridor along spine
-		Pt a(a_.x + u.x*spinecorrde, a_.y + u.y*spinecorrde);
-		int achle = 0;
-		while (achle < a.di(b)-spinequadle) {
-			Pt c(a.x + u.x*achle, a.y + u.y*achle); Pt d(a.x + u.x*2*achle, a.y + u.y*2*achle);
-			if (intpolyline.inside(ofVec3f(c.x, c.y, 0)) && intpolyline.inside(ofVec3f(d.x, d.y, 0))) { unitseg.push_back(Seg(c, d)); }
-			achle += 2*spinequadle;
-		}
-	}
-	for (int i = 0; i < segdn.size(); i++) {
-		Pt a_ = segdn[i].A;//this is point on spine
-		Pt b = segdn[i].B;//this is intx point on int region
-		Pt u((b.x - a_.x) / a_.di(b), (b.y - a_.y) / a_.di(b));
-		// move a off spine to account for internal corridor along spine
-		Pt a(a_.x + u.x*spinecorrde, a_.y + u.y*spinecorrde);
-		int achle = 0;
-		while (achle < a.di(b) - spinequadle) {
-			Pt c(a.x + u.x*achle, a.y + u.y*achle); Pt d(a.x + u.x * 2 * achle, a.y + u.y * 2 * achle);
-			if (intpolyline.inside(ofVec3f(c.x, c.y, 0)) && intpolyline.inside(ofVec3f(d.x, d.y, 0))) { unitseg.push_back(Seg(c, d)); }
-			achle += 2 * spinequadle;
-		}
-	}
-
-	for (int i = 0; i < unitseg.size(); i++) {
-		Pt a = unitseg[i].A; Pt b = unitseg[i].B; 
-		float d = spinequadde;
-		Pt u((b.x - a.x)*d / a.di(b), (b.y - a.y)*d / a.di(b));
-		Pt p(a.x-u.y, a.y+u.x); Pt p_(a.x+u.y, a.y-u.x);
-		Pt q(b.x - u.y, b.y + u.x); Pt q_(b.x + u.y, b.y - u.x);
-		Quad q0(a, p, q, b); Quad q1(a, p_, q_, b);
-		q0.display(); q1.display();
-	}
-
-	/*
-	//normals from interior spine points  + intersection of normals from spine wrt interior
-	vector<Seg> segup; vector<Seg> segdn;
-	for (int i = 1; i < reqspinepts.size(); i++) {
-		Pt a = reqspinepts[i - 1]; Pt b = reqspinepts[i];
-		Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
-		Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
-		Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
-		//ofDrawLine(a.x, a.y, e.x, e.y); ofDrawLine(a.x, a.y, f.x, f.y);
-		for (int j = 1; j < revintgridptvec.size(); j++) {
-			Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
-			Pt I = intxPt4(e, a, m, n);
-			if (I.x > 0 && I.y > 0) {
-				//ofEllipse(I.x, I.y, 20, 20);
-				segdn.push_back(Seg(a, I));
-			}
-			Pt J = intxPt4(f, a, m, n);
-			if (J.x > 0 && J.y > 0) {
-				//ofEllipse(J.x, J.y, 20, 20);
-				segup.push_back(Seg(a, J));
-			}
-		}
-	}
-	
-	
-	//construct quads of rational rects UP
-	vector<Quad>quadint;
-	for (int i = 1; i < segup.size(); i++) {
-		//a is point on spine & b is the intx with int region
-		Pt a = segup[i - 1].A; Pt b = segup[i - 1].B;
-		Pt c = segup[i].A; Pt d = segup[i].B;
-		if (a.di(b) < c.di(d)) {
-			Pt q(c.x + (b.x - a.x), c.y + (b.y - a.y));
-			Quad Q(a, b, q, c); Q.display();
-			quadint.push_back(Q);
-		}
-		else {
-			Pt q(a.x + (d.x - c.x), a.y + (d.y - c.y));
-			Quad Q(a, q, d, c); Q.display();
-			quadint.push_back(Q);
-		}
-	}
-	for (int i = 1; i < segdn.size(); i++) {
-		//a is point on spine & b is the intx with int region
-		Pt a = segdn[i - 1].A; Pt b = segdn[i - 1].B;
-		Pt c = segdn[i].A; Pt d = segdn[i].B;
-		if (a.di(b) < c.di(d)) {
-			Pt q(c.x + (b.x - a.x), c.y + (b.y - a.y));
-			Quad Q(a, b, q, c); //Q.display();
-			quadint.push_back(Q);
-		}
-		else {
-			Pt q(a.x + (d.x - c.x), a.y + (d.y - c.y));
-			Quad Q(a, q, d, c);// Q.display();
-			quadint.push_back(Q);
-		}
-	}
-
-	
-
-	for (int i = 0; i < quadint.size()-1; i++) {
-		Pt a = quadint[i].A; Pt b = quadint[i].B; Pt c = quadint[i].C; Pt d = quadint[i].D;
-		Pt e((a.x + d.x) / 2, (a.y + d.y) / 2); Pt f((b.x + c.x) / 2, (b.y + c.y) / 2);
-		ofDrawLine(e.x, e.y, f.x, f.y);
-		Pt u((f.x - e.x) / e.di(f), (f.y - e.y) / e.di(f)); Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
-		int j = 0;
-		while(j<e.di(f)- spinequadle){
-			Pt p(e.x + u.x*j, e.y + u.y*j);
-			Pt p_(e.x + u.x*(j+spinequadle), e.y + u.y*(j+ spinequadle));
-			Pt q(p.x + v.x*spinequadde, p.y + v.y*spinequadde);
-			Pt q_(p.x + v_.x*spinequadde, p.y + v_.y*spinequadde);
-			Pt r(p_.x + v.x*spinequadde, p_.y + v.y*spinequadde);
-			Pt r_(p_.x + v_.x*spinequadde, p_.y + v_.y*spinequadde);
-			Quad Q1(r, p_, p, q); Q1.display();
-			Quad Q2(p_, r_, q_, p); Q2.display();
-			//ofEllipse(p.x, p.y, 10, 10);
-			ofDrawLine(p.x, p.y, q.x, q.y); ofDrawLine(p.x, p.y, q_.x, q_.y);
-			j += spinequadle;
-		}
-	}
-
-	*/
-
 }
 
 vector<ofPath> ofApp::genDoorSwing(Quad quad, int T) {
+	//here the path returned is a globally defined variable & updated asap
 	vector<ofPath> pathvec;
 	ofPath dpath;
 	Quad q0 = quad;
@@ -823,7 +802,7 @@ vector<ofPath> ofApp::genDoorSwing(Quad quad, int T) {
 		else {
 			dpath.lineTo(p.x, p.y);
 		}
-	}		
+	}
 	dpath.lineTo(a.x, a.y); dpath.close();
 	pathvec.push_back(dpath);
 	return pathvec;
@@ -888,8 +867,15 @@ void ofApp::keyPressed(int key){
 	}
 	if (key == 'g' || key == 'G') { 
 		intsubdivgeneratequads.clear();
+		generatetreesystem = 0;
 		generatesubdivsystem = 1; 		
 	}
+	if (key == 'h' || key == 'H') {
+		intsubdivgeneratequads.clear();
+		generatesubdivsystem = 0;
+		generatetreesystem = 1;
+	}
+	
 }
 
 void ofApp::keyReleased(int key){
