@@ -45,6 +45,16 @@ public:
 		path.close();
 		path.draw();
 	}
+	ofPolyline getPoly(){
+		ofPolyline poly;
+		poly.addVertex(A.x, A.y);
+		poly.addVertex(B.x, B.y);
+		poly.addVertex(C.x, C.y);
+		poly.addVertex(D.x, D.y);
+		poly.close();
+		return poly;
+	}
+
 };
 
 struct Seg{
@@ -141,6 +151,11 @@ class ofApp : public ofBaseApp{
 		vector<Pt> revintgridptvec;
 		ofPath path2, path3, path4;
 		Seg spinehorseg, spineverseg;
+
+		//plot the internal subdiv quads & door swings
+		vector<Quad> plotsubdivquad; vector<ofPath> subdivdoorswingpath;
+		vector<Quad> plottreequad; vector<ofPath> treedoorswingpath;
+
 
 		//global variables
 		string MSG, title;

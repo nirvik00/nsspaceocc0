@@ -517,78 +517,87 @@ void ofApp::draw() {
 		}
 	}
 
-
 	//for peripheral system: this is a boundary with a hole such that the boundary gets filled on one side 
-	if (generatesubdivsystem == 1) {
-		if (subdivquads.size() > 0) {
-			intquads.clear(); float Le = spinequadle; float De = spinequadde; float De1 = (De / cos(PI / 4));
-			for (int i = 0; i < subdivquads.size(); i++) {
-				Quad Q = subdivquads[i];
-				Pt a = Q.A; Pt b = Q.B; Pt c = Q.C; Pt d = Q.D;
+	if (subdivquads.size() > 0) {
+		plotsubdivquad.clear(); subdivdoorswingpath.clear();
+		intquads.clear(); float Le = spinequadle; float De = spinequadde; float De1 = (De / cos(PI / 4));
+		for (int i = 0; i < subdivquads.size(); i++) {
+			Quad Q = subdivquads[i];
+			Pt a = Q.A; Pt b = Q.B; Pt c = Q.C; Pt d = Q.D;
 
-				Pt t((b.x - a.x)*De1 / a.di(b), (b.y - a.y)*De1 / a.di(b));
-				Pt u((c.x - b.x)*De1 / b.di(c), (c.y - b.y)*De1 / b.di(c));
-				Pt v((d.x - c.x)*De1 / c.di(d), (d.y - c.y)*De1 / c.di(d));
-				Pt w((a.x - d.x)*De1 / a.di(d), (a.y - d.y)*De1 / a.di(d));
+			Pt t((b.x - a.x)*De1 / a.di(b), (b.y - a.y)*De1 / a.di(b));
+			Pt u((c.x - b.x)*De1 / b.di(c), (c.y - b.y)*De1 / b.di(c));
+			Pt v((d.x - c.x)*De1 / c.di(d), (d.y - c.y)*De1 / c.di(d));
+			Pt w((a.x - d.x)*De1 / a.di(d), (a.y - d.y)*De1 / a.di(d));
 			
-				Pt m(a.x + t.x*cos(PI / 4) - t.y*sin(PI / 4), a.y + t.x*sin(PI / 4) + t.y*cos(PI / 4));
-				Pt n(b.x + u.x*cos(PI / 4) - u.y*sin(PI / 4), b.y + u.x*sin(PI / 4) + u.y*cos(PI / 4));
-				Pt o(c.x + v.x*cos(PI / 4) - v.y*sin(PI / 4), c.y + v.x*sin(PI / 4) + v.y*cos(PI / 4));
-				Pt p(d.x + w.x*cos(PI / 4) - w.y*sin(PI / 4), d.y + w.x*sin(PI / 4) + w.y*cos(PI / 4));
+			Pt m(a.x + t.x*cos(PI / 4) - t.y*sin(PI / 4), a.y + t.x*sin(PI / 4) + t.y*cos(PI / 4));
+			Pt n(b.x + u.x*cos(PI / 4) - u.y*sin(PI / 4), b.y + u.x*sin(PI / 4) + u.y*cos(PI / 4));
+			Pt o(c.x + v.x*cos(PI / 4) - v.y*sin(PI / 4), c.y + v.x*sin(PI / 4) + v.y*cos(PI / 4));
+			Pt p(d.x + w.x*cos(PI / 4) - w.y*sin(PI / 4), d.y + w.x*sin(PI / 4) + w.y*cos(PI / 4));
 			
-				//these are the quads with angle bisector
-				Quad Q0(a, m, n, b); Quad Q1(b, n, o, c); Quad Q2(c, o, p, d); Quad Q3(d, p, m, a);
+			//these are the quads with angle bisector
+			Quad Q0(a, m, n, b); Quad Q1(b, n, o, c); Quad Q2(c, o, p, d); Quad Q3(d, p, m, a);
 
-				//for 1st quad : a->m_, n->n_
-				//for 2nd quad : b->n_, o->o_
-				//for 3rd quad : c->o_, p->p_
-				//for 4th quad : d->p_, m->m_
-				//Pt m_(m.x, a.y); Pt n_(b.x, n.y); Pt o_(o.x, c.y); Pt p_(d.x, p.y);
-				//Quad Q0(m_, m, n_, b); Quad Q1(n_, n, o_, c); Quad Q2(o_, o, p_, d); Quad Q3(p_, p, m_, a);
+			//for 1st quad : a->m_, n->n_
+			//for 2nd quad : b->n_, o->o_
+			//for 3rd quad : c->o_, p->p_
+			//for 4th quad : d->p_, m->m_
+			//Pt m_(m.x, a.y); Pt n_(b.x, n.y); Pt o_(o.x, c.y); Pt p_(d.x, p.y);
+			//Quad Q0(m_, m, n_, b); Quad Q1(n_, n, o_, c); Quad Q2(o_, o, p_, d); Quad Q3(p_, p, m_, a);			
+			//Q0.display(); Q1.display(); Q2.display(); Q3.display();
 			
-				//Q0.display(); Q1.display(); Q2.display(); Q3.display();
-
-				vector<Quad> quad0 = periIntQuad(Q0, Le, De);
-				for (int j = 0; j < quad0.size(); j++) {
-					quad0[j].display();
-					vector<ofPath> drpaths = genDoorSwing(quad0[j], j);
-					for (int k = 0; k < drpaths.size(); k++) {
-						ofPath dpath = drpaths[k];
-						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
-					}
-				}
-				vector<Quad> quad1 = periIntQuad(Q1, Le, De);
-				for (int j = 0; j < quad1.size(); j++) {
-					quad1[j].display();
-					vector<ofPath> drpaths = genDoorSwing(quad1[j], j);
-					for (int k = 0; k < drpaths.size(); k++) {
-						ofPath dpath = drpaths[k];
-						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
-					}
-				}
-				vector<Quad> quad2 = periIntQuad(Q2, Le, De);
-				for (int j = 0; j < quad2.size(); j++) {
-					quad2[j].display();
-					vector<ofPath> drpaths = genDoorSwing(quad2[j], j);
-					for (int k = 0; k < drpaths.size(); k++) {
-						ofPath dpath = drpaths[k];
-						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
-					}
-				}
-				vector<Quad> quad3 = periIntQuad(Q3, Le, De);
-				for (int j = 0; j < quad3.size(); j++) {
-					quad3[j].display();
-					vector<ofPath> drpaths = genDoorSwing(quad3[j], j);
-					for (int k = 0; k < drpaths.size(); k++) {
-						ofPath dpath = drpaths[k];
-						dpath.setStrokeWidth(1); dpath.setStrokeColor(0); 
-						dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
-					}
+			vector<Quad> quad0 = periIntQuad(Q0, Le, De);
+			for (int j = 0; j < quad0.size(); j++) {
+				//quad0[j].display(); 
+				plotsubdivquad.push_back(quad0[j]);
+				vector<ofPath> drpaths = genDoorSwing(quad0[j], j);
+				for (int k = 0; k < drpaths.size(); k++) {
+					ofPath dpath = drpaths[k]; subdivdoorswingpath.push_back(dpath);
+					//dpath.setStrokeWidth(1); dpath.setStrokeColor(0); dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
 				}
 			}
+			vector<Quad> quad1 = periIntQuad(Q1, Le, De);
+			for (int j = 0; j < quad1.size(); j++) {
+				//quad1[j].display();
+				plotsubdivquad.push_back(quad1[j]);
+				vector<ofPath> drpaths = genDoorSwing(quad1[j], j);
+				for (int k = 0; k < drpaths.size(); k++) {
+					ofPath dpath = drpaths[k]; subdivdoorswingpath.push_back(dpath);
+					//dpath.setStrokeWidth(1); dpath.setStrokeColor(0); dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				}
+			}
+			vector<Quad> quad2 = periIntQuad(Q2, Le, De);
+			for (int j = 0; j < quad2.size(); j++) {
+				//quad2[j].display();
+				plotsubdivquad.push_back(quad2[j]);
+				vector<ofPath> drpaths = genDoorSwing(quad2[j], j);
+				for (int k = 0; k < drpaths.size(); k++) {
+					ofPath dpath = drpaths[k]; subdivdoorswingpath.push_back(dpath);
+					//dpath.setStrokeWidth(1); dpath.setStrokeColor(0); dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				}
+			}
+			vector<Quad> quad3 = periIntQuad(Q3, Le, De);
+			for (int j = 0; j < quad3.size(); j++) {
+				//quad3[j].display(); 
+				plotsubdivquad.push_back(quad3[j]);
+				vector<ofPath> drpaths = genDoorSwing(quad3[j], j);
+				for (int k = 0; k < drpaths.size(); k++) {
+					ofPath dpath = drpaths[k]; subdivdoorswingpath.push_back(dpath);
+					//dpath.setStrokeWidth(1); dpath.setStrokeColor(0); dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
+				}
+			}
+		}
+	}
+	
+	//plot the elements of the subdiv system
+	if (plotsubdivquad.size()>0 && generatetreesystem ==0) {
+		for (int i = 0; i < plotsubdivquad.size(); i++) {
+			plotsubdivquad[i].display();
+		}
+		for (int i = 0; i < subdivdoorswingpath.size(); i++) {
+			ofPath dpath = subdivdoorswingpath[i];
+			dpath.setStrokeWidth(1); dpath.setStrokeColor(0);
+			dpath.setFillColor(ofColor(255, 255, 255)); dpath.draw();
 		}
 	}
 
@@ -605,8 +614,7 @@ void ofApp::draw() {
 		ofSetColor(0, 0, 0, 150); ofSetLineWidth(1); ofNoFill(); ofDrawEllipse(spineverseg.A.x, spineverseg.A.y, 25, 25);
 		ofSetColor(0, 0, 0, 150); ofSetLineWidth(1); ofNoFill(); ofDrawEllipse(spineverseg.B.x, spineverseg.B.y, 25, 25);
 	}
-
-
+	
 	//points inside the interior polygon
 	vector<Pt> intspinepts;
 	for (int i = 1; i < fsmoothspinept.size(); i++) {
@@ -619,13 +627,14 @@ void ofApp::draw() {
 	}
 
 	if (generatetreesystem == 1) {
+		treedoorswingpath.clear(); plottreequad.clear();
 		//get spaced-out points - using spine corr distance
 		vector<Pt> reqspinepts; Pt prev(intspinepts[0]);
 		for (int i = 0; i < intspinepts.size(); i++) {
 			float d = intspinepts[i].di(prev);
 			if (i%smoothspinedist == 0 && i > 0 && d > spinequadle) {
 				Pt a = intspinepts[i];
-				ofSetColor(0); ofSetLineWidth(1); ofEllipse(a.x, a.y, 10, 10);
+				//ofSetColor(0); ofSetLineWidth(1); ofEllipse(a.x, a.y, 10, 10);
 				reqspinepts.push_back(intspinepts[i]);
 				prev.setup(intspinepts[i].x, intspinepts[i].y);
 			}
@@ -638,22 +647,18 @@ void ofApp::draw() {
 			Pt u((b.x - a.x) * 500 / a.di(b), (b.y - a.y) * 500 / a.di(b));
 			Pt v(-u.y, u.x); Pt v_(u.y, -u.x);
 			Pt e(a.x + v.x, a.y + v.y); Pt f(a.x + v_.x, a.y + v_.y);
-			//ofDrawLine(a.x, a.y, e.x, e.y); ofDrawLine(a.x, a.y, f.x, f.y);
 			for (int j = 1; j < revintgridptvec.size(); j++) {
 				Pt m = revintgridptvec[j - 1]; Pt n = revintgridptvec[j];
 				Pt I = intxPt4(e, a, m, n);
 				if (I.x > 0 && I.y > 0) {
-					//ofEllipse(I.x, I.y, 20, 20); ofDrawLine(a.x, a.y, I.x, I.y);
 					segdn.push_back(Seg(a, I));
 				}
 				Pt J = intxPt4(f, a, m, n);
 				if (J.x > 0 && J.y > 0) {
-					//ofEllipse(J.x, J.y, 20, 20); ofDrawLine(a.x, a.y, J.x, J.y);
 					segup.push_back(Seg(a, J));
 				}
 			}
 		}
-
 		vector<Seg> unitseg;
 		for (int i = 0; i < segup.size(); i++) {
 			Pt a_ = segup[i].A;//this is point on spine
@@ -665,7 +670,6 @@ void ofApp::draw() {
 			while (j*spinequadle < a.di(b) - spinequadle) {
 				Pt e(a.x + u.x*j*spinequadle, a.y + u.y*j*spinequadle);
 				Pt f(a.x + u.x*(j + 1)*spinequadle, a.y + u.y*(j + 1)*spinequadle);
-				//ofDrawEllipse(e.x, e.y, 10, 10); ofDrawEllipse(f.x, f.y, 10, 10); ofDrawLine(e.x, e.y, f.x, f.y);
 				if (intpolyline.inside(ofVec3f(e.x, e.y, 0))) { // && intpolyline.inside(ofVec3f(f.x, f.y, 0))) {
 					unitseg.push_back(Seg(e, f));
 				}
@@ -694,10 +698,8 @@ void ofApp::draw() {
 				j++;
 			}
 		}
-
-
 		//generate unit quads and display + plot door swings
-		vector<ofPath> dpathX;
+		//vector<ofPath> dpathX;
 		for (int i = 0; i < unitseg.size(); i++) {
 			Pt a = unitseg[i].A; Pt b = unitseg[i].B;
 			float d = spinequadde; float d_ = DoorDepth;
@@ -707,43 +709,80 @@ void ofApp::draw() {
 			Pt p(a.x - u.y, a.y + u.x); Pt p_(a.x + u.y, a.y - u.x);
 			Pt q(b.x - u.y, b.y + u.x); Pt q_(b.x + u.y, b.y - u.x);
 			Quad q0(a, p, q, b); Quad q1(a, p_, q_, b);
-			q0.display(); q1.display();
-
-			ofSetColor(200, 0, 0, 50); ofSetLineWidth(5);
+			//q0.display(); q1.display();
 			Pt g(p.x + u_.y, p.y - u_.x); Pt g_(p.x + u_.x, p.y + u_.y);
-			ofDrawLine(p.x, p.y, g.x, g.y); ofDrawLine(p.x, p.y, g_.x, g_.y);
 			Pt h(p_.x - u_.y, p_.y + u_.x); Pt h_(p_.x + u_.x, p_.y + u_.y);
-			ofDrawLine(p_.x, p_.y, h.x, h.y); ofDrawLine(p_.x, p_.y, h_.x, h_.y);
 
-			ofPath dpath0;
-			for (float k = 0; k < PI / 2; k += PI / 20) {
-				float ang = 2 * PI - k;
-				float x = u_.x*cos(ang)*DoorDepth - u_.y*sin(ang)*DoorDepth;
-				float y = u_.x*sin(ang)*DoorDepth + u_.y*cos(ang)*DoorDepth;
-				Pt P(p.x + x, p.y + y); ofSetColor(0); ofFill(); ofEllipse(P.x, P.y, 2, 2);
-				if (k == 0) { dpath0.moveTo(p.x, p.y); }
-				else { dpath0.lineTo(p.x, p.y); }
+			int sum0 = 0; //check for containment quad q0
+			int sum1 = 0; //check for containment quad q1
+			for (int j = 0; j < plottreequad.size(); j++) {
+				ofPolyline poly = plottreequad[j].getPoly();
+				Quad qt = plottreequad[j];
+				
+				//first quad
+				ofPolyline poly0 = q0.getPoly();
+				if (poly.inside(q0.A.x, q0.A.y) == true) { sum0++; }
+				if (poly.inside(q0.B.x, q0.B.y) == true) { sum0++; }
+				if (poly.inside(q0.C.x, q0.C.y) == true) { sum0++; }
+				if (poly.inside(q0.D.x, q0.D.y) == true) { sum0++; }
+				if (poly0.inside(qt.A.x, qt.A.y) == true) { sum0++; }
+				if (poly0.inside(qt.B.x, qt.B.y) == true) { sum0++; }
+				if (poly0.inside(qt.C.x, qt.C.y) == true) { sum0++; }
+				if (poly0.inside(qt.D.x, qt.D.y) == true) { sum0++; }
+				
+				//the second quad
+				ofPolyline poly1 = q1.getPoly();
+				if (poly.inside(q1.A.x, q0.A.y) == true) { sum1++; }
+				if (poly.inside(q1.B.x, q0.B.y) == true) { sum1++; }
+				if (poly.inside(q1.C.x, q0.C.y) == true) { sum1++; }
+				if (poly.inside(q1.D.x, q0.D.y) == true) { sum1++; }
+				if (poly1.inside(qt.A.x, qt.A.y) == true) { sum1++; }
+				if (poly1.inside(qt.B.x, qt.B.y) == true) { sum1++; }
+				if (poly1.inside(qt.C.x, qt.C.y) == true) { sum1++; }
+				if (poly1.inside(qt.D.x, qt.D.y) == true) { sum1++; }
+				
 			}
-			dpathX.push_back(dpath0);
-
-			ofPath dpath1;
-			for (float k = 0; k < PI / 2; k += PI / 20) {
-				float ang = k;
-				float x = u_.x*cos(ang)*DoorDepth - u_.y*sin(ang)*DoorDepth;
-				float y = u_.x*sin(ang)*DoorDepth + u_.y*cos(ang)*DoorDepth;
-				Pt P(p_.x + x, p_.y + y); ofSetColor(0); ofFill(); ofEllipse(P.x, P.y, 2, 2);
-				if (k == 0) { dpath1.moveTo(p_.x, p_.y); }
-				else { dpath1.lineTo(p_.x, p_.y); }
+			if (sum0 == 0) {
+				plottreequad.push_back(q0); 
+				ofPath dpath0;
+				for (float k = 0; k < PI / 2; k += PI / 20) {
+					float ang = 2 * PI - k;
+					float x = u_.x*cos(ang)*DoorDepth - u_.y*sin(ang)*DoorDepth;
+					float y = u_.x*sin(ang)*DoorDepth + u_.y*cos(ang)*DoorDepth;
+					Pt P(p.x + x, p.y + y);
+					if (k == 0) { dpath0.moveTo(P.x, P.y); }
+					else { dpath0.lineTo(P.x, P.y); }
+				}
+				treedoorswingpath.push_back(dpath0);
 			}
-			dpathX.push_back(dpath1);
+			if(sum1==0){
+				plottreequad.push_back(q1);
+				ofPath dpath1;
+				for (float k = 0; k < PI / 2; k += PI / 20) {
+					float ang = k;
+					float x = u_.x*cos(ang)*DoorDepth - u_.y*sin(ang)*DoorDepth;
+					float y = u_.x*sin(ang)*DoorDepth + u_.y*cos(ang)*DoorDepth;
+					Pt P(p_.x + x, p_.y + y);
+					if (k == 0) { dpath1.moveTo(P.x, P.y); }
+					else { dpath1.lineTo(P.x, P.y); }
+				}
+				treedoorswingpath.push_back(dpath1);
+			}			
+		}		
+	}
+	
+	//plot quads & door swing of smooth spine 
+	if (generatetreesystem == 1) {
+		for (int i = 0; i < treedoorswingpath.size(); i++) {
+			treedoorswingpath[i].setFilled(true); treedoorswingpath[i].setFillColor(ofColor(255, 255, 255));
+			treedoorswingpath[i].setStrokeColor(ofColor(0, 0, 0)); treedoorswingpath[i].setStrokeWidth(1);
+			treedoorswingpath[i].draw();
 		}
-		//door swing of smooth spine 
-		for (int i = 0; i < dpathX.size(); i++) {
-			dpathX[i].setFilled(true); dpathX[i].setFillColor(ofColor(255, 255, 255));
-			dpathX[i].setStrokeColor(ofColor(0, 0, 0)); dpathX[i].setStrokeWidth(2);
-			dpathX[i].draw();
+		for (int i = 0; i < plottreequad.size(); i++) {
+			plottreequad[i].display();
 		}
 	}
+	
 
 	//plot smooth spine + spine curve
 	if (smoothspinecontrolpts == true) {
@@ -838,7 +877,6 @@ vector<Quad> ofApp::periIntQuad(Quad Q, float Le, float De) {
 
 
 
-
 /*	OF GUI METHODS	*/
 
 
@@ -871,6 +909,7 @@ void ofApp::keyPressed(int key){
 		generatesubdivsystem = 1; 		
 	}
 	if (key == 'h' || key == 'H') {
+		plotsubdivquad.clear();
 		intsubdivgeneratequads.clear();
 		generatesubdivsystem = 0;
 		generatetreesystem = 1;
